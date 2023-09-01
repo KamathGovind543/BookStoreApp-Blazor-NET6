@@ -139,20 +139,27 @@ namespace BookStoreApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAuthor(int id)
         {
-            if (_context.Authors == null)
+            try
             {
-                return NotFound();
+                var author = await _context.Authors.FindAsync(id);
+                if (author == null)
+                {
+                    _logger.LogWarning($"{nameof(Author)} record not found in {nameof(PutAuthor)} - ID: {id}");
+                    return NotFound();
+                   
+                }
+
+                _context.Authors.Remove(author);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-            var author = await _context.Authors.FindAsync(id);
-            if (author == null)
+            catch(Exception ex)
             {
-                return NotFound();
+                _logger.LogError(ex, $"Error perfoming DELETE in {nameof(DeleteAuthor)}");
+                return StatusCode(500, Messages.Error500Message);
             }
-
-            _context.Authors.Remove(author);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+           
         }
 
         private async Task<bool> AuthorExists(int id)
